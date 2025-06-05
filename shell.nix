@@ -2,6 +2,7 @@
 pkgs.mkShellNoCC {
     name = "paint";
     packages = with pkgs; [
+        bacon
         cargo
         clippy
         git
@@ -16,10 +17,10 @@ pkgs.mkShellNoCC {
     LD_LIBRARY_PATH = with pkgs; lib.makeLibraryPath [
         libGL
         libxkbcommon
-        # vulkan-loader
-        # vulkan-validation-layers
+        vulkan-loader
+        vulkan-validation-layers
         wayland
     ];
-    # VULKAN_SDK = pkgs.vulkan-loader;
-    # VK_SDK_PATH = pkgs.vulkan-loader;
+    VULKAN_SDK = pkgs.vulkan-loader;
+    VK_SDK_PATH = pkgs.vulkan-loader;
 }

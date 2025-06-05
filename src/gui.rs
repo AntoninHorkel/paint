@@ -62,6 +62,7 @@ impl Gui {
         let context = Context::default();
         context.set_zoom_factor(1.1);
         egui_extras::install_image_loaders(&context);
+        #[allow(clippy::cast_possible_truncation)]
         let scale_factor = renderer.window.scale_factor() as f32;
         let state = State::new(
             context.clone(),
@@ -414,6 +415,7 @@ impl Gui {
             renderer.draw();
             renderer.window.request_redraw();
         }
+        self.context.forget_all_images(); // TODO: Do this only if zoom factor changes!
         options.zoom_factor = self.context.zoom_factor();
         self.context.options_mut(|o| *o = options);
         self.textures.append(output.textures_delta);

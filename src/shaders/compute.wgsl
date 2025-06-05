@@ -63,56 +63,7 @@ fn compute(@builtin(global_invocation_id) id: vec3<u32>) {
             sdf = distance(p1, current_pixel) - distance(p1, p2);
         }
         // Draw ellipse
-        case 4u: {
-            // https://iquilezles.org/articles/distfunctions2d/
-            let p = current_pixel - (p1 + p2) / 2.0;
-            let radii = abs(p1 - p2) / 2.0;
-            // Implementation based on Inigo Quilez's accurate ellipse SDF
-            var pos = abs(p);
-            var ab = radii;
-            var swapped = false;
-    
-            if (pos.x > pos.y) {
-                pos = vec2<f32>(pos.y, pos.x);
-                ab = vec2<f32>(ab.y, ab.x);
-                swapped = true;
-            }
-
-            let l = ab.y * ab.y - ab.x * ab.x;
-            let m = ab.x * pos.x / l;
-            let m2 = m * m;
-            let n = ab.y * pos.y / l;
-            let n2 = n * n;
-            let c = (m2 + n2 - 1.0) / 3.0;
-            let c3 = c * c * c;
-            let q = c3 + 2.0 * m2 * n2;
-            let d = c3 + m2 * n2;
-            let g = m + n * m2 - m2 * n2;
-
-            var co: f32;
-    
-            if (d < 0.0) {
-                let h = acos(q / c3) / 3.0;
-                let s = cos(h);
-                let t = sin(h) * sqrt(3.0);
-                let rx = sqrt(-c * (s + t + 2.0) + m2);
-                let ry = sqrt(-c * (s - t + 2.0) + m2);
-                co = (ry + sign(l) * rx + abs(g) / (rx * ry) - m) / 2.0;
-            } else {
-                let h = 2.0 * m * n * sqrt(d);
-                let s = sign(q + h) * pow(abs(q + h), 1.0 / 3.0);
-                let u = sign(q - h) * pow(abs(q - h), 1.0 / 3.0);
-                let rx = -s - u - 4.0 * c + 2.0 * m2;
-                let ry = (s - u) * sqrt(3.0);
-                let rm = sqrt(rx * rx + ry * ry);
-                co = (ry / sqrt(rm - rx) + 2.0 * g / rm - m) / 2.0;
-            }
-
-            let r = ab * vec2<f32>(co, co - sign(l) * m);
-            sdf = length(r - pos) * sign(pos.y - r.y);
-            // https://iquilezles.org/articles/ellipsoids/
-            // https://infinitecanvas.cc/guide/lesson-009#ellipse
-        }
+        case 4u: {}
         // Draw polygon
         case 5u: {
             // https://iquilezles.org/articles/distfunctions2d/

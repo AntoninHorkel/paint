@@ -91,14 +91,7 @@ fn fragment(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
                 sdf = max(min(sdf, a), -max(sdf, a)); // Simple OR doesn't work for circles, XOR is used: https://iquilezles.org/articles/sdfxor/
             }
             // Draw ellipse
-            case 4u: {
-                // https://www.desmos.com/calculator/z48pcankom
-                // let a = (frag_coord * 2.0 - p1 - p2) / (p1 - p2); // = (frag_coord - (p1 + p2) / 2.0) / (p1 - p2) / 2.0
-                // sdf = fwidthFine(min(sdf, dot(a, a) - 1.0));
-                // https://www.desmos.com/calculator/jx8c9spujs
-                let a = 2.0 * (4.0 * frag_coord - p1 - p2) / (((p1 - p2) / 2.0) * ((p1 - p2) / 2.0)); // = (2.0 * frag_coord - (p1 + p2) / 2.0) / (((p1 - p2) / 2.0) * ((p1 - p2) / 2.0));
-                sdf = min(sdf, max(a.x, a.y));
-            }
+            case 4u: {}
             // Draw polygon
             case 5u: {
                 // https://iquilezles.org/articles/distfunctions2d/

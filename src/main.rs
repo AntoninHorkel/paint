@@ -138,12 +138,20 @@ impl ApplicationHandler for App {
                 match self.state {
                     State::AddPoints => {
                         if !gui.using_cursor {
-                            renderer.storage_buffer_object.points.pop();
-                            renderer.storage_buffer_object.points.push(Vec2::new(self.position.x, self.position.y));
-                            renderer.storage_buffer_object_changed = true;
-                            if gui.preview {
-                                renderer.copy_texture(CopyDirection::BackToFront);
+                            if gui.action == Action::Erase {
+                                renderer.storage_buffer_object.points.swap_remove(0);
+                                renderer.storage_buffer_object.points.push(Vec2::new(self.position.x, self.position.y));
+                                renderer.storage_buffer_object_changed = true;
                                 renderer.draw();
+                                renderer.copy_texture(CopyDirection::FrontToBack);
+                            } else {
+                                renderer.storage_buffer_object.points.pop();
+                                renderer.storage_buffer_object.points.push(Vec2::new(self.position.x, self.position.y));
+                                renderer.storage_buffer_object_changed = true;
+                                if gui.preview {
+                                    renderer.copy_texture(CopyDirection::BackToFront);
+                                    renderer.draw();
+                                }
                             }
                             renderer.window.request_redraw();
                         }
@@ -172,84 +180,83 @@ impl ApplicationHandler for App {
             } => {
                 match button {
                     MouseButton::Left => {
-                        if state == ElementState::Pressed {
-                            if gui.using_cursor {
-                                return;
-                            }
-                            if gui.action == Action::Fill {
-                                // TODO: Implement a trait to convert Position<T> to Position<U>.
-                                renderer.fill(
-                                    Position::new(self.position.x as u32, self.position.y as u32),
-                                    gui.color.to_array(),
-                                );
-                                renderer.copy_texture(CopyDirection::FrontToBack);
-                                renderer.window.request_redraw();
-                                return;
-                            }
-                            match self.state {
-                                State::Init => {
-                                    renderer.storage_buffer_object.points.clear();
-                                    renderer
-                                        .storage_buffer_object
-                                        .points
-                                        .push(Vec2::new(self.position.x, self.position.y));
-                                    renderer
-                                        .storage_buffer_object
-                                        .points
-                                        .push(Vec2::new(self.position.x, self.position.y));
-                                    renderer.storage_buffer_object.length = 2;
-                                    renderer.storage_buffer_object_changed = true;
-                                    self.state = State::AddPoints;
+                        match state {
+                            ElementState::Pressed => {
+                                if gui.using_cursor {
+                                    return;
                                 }
-                                State::AddPoints => match gui.action {
-                                    Action::DrawLine
-                                    | Action::DrawRectangle
-                                    | Action::DrawCircle
-                                    | Action::DrawEllipse
-                                    | Action::CutRectangle => {
-                                        self.state = State::EditPoints;
-                                    }
-                                    Action::Erase => {
-                                        renderer.storage_buffer_object.points.swap_remove(0);
+                                if gui.action == Action::Fill {
+                                    // TODO: Implement a trait to convert Position<T> to Position<U>.
+                                    renderer.fill(
+                                        Position::new(self.position.x as u32, self.position.y as u32),
+                                        gui.color.to_array(),
+                                    );
+                                    renderer.copy_texture(CopyDirection::FrontToBack);
+                                    renderer.window.request_redraw();
+                                    return;
+                                }
+                                match self.state {
+                                    State::Init => {
+                                        renderer.storage_buffer_object.points.clear();
                                         renderer
                                             .storage_buffer_object
                                             .points
                                             .push(Vec2::new(self.position.x, self.position.y));
-                                        renderer.storage_buffer_object_changed = true;
-                                    }
-                                    Action::DrawPolygon => {
                                         renderer
                                             .storage_buffer_object
                                             .points
                                             .push(Vec2::new(self.position.x, self.position.y));
-                                        renderer.storage_buffer_object.length += 1;
+                                        renderer.storage_buffer_object.length = 2;
                                         renderer.storage_buffer_object_changed = true;
+                                        self.state = State::AddPoints;
                                     }
-                                    _ => {}
-                                },
-                                State::EditPoints => match self.grabbed_point_idx {
-                                    Some(_) => self.grabbed_point_idx = None,
-                                    None => {
-                                        self.grabbed_point_idx = renderer
-                                            .storage_buffer_object
-                                            .points
-                                            .iter()
-                                            .enumerate()
-                                            .filter_map(|(idx, point)| {
-                                                let dx = (point.x - self.position.x).abs();
-                                                let dy = (point.y - self.position.y).abs();
-                                                if dx < gui.point_grab_tolerance && dy < gui.point_grab_tolerance {
-                                                    Some((idx, dx + dy))
-                                                } else {
-                                                    None
-                                                }
-                                            })
-                                            .min_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
-                                            .map(|(idx, _)| idx);
-                                    }
-                                },
+                                    State::AddPoints => match gui.action {
+                                        Action::DrawLine
+                                        | Action::DrawRectangle
+                                        | Action::DrawCircle
+                                        | Action::DrawEllipse
+                                        | Action::CutRectangle => {
+                                            self.state = State::EditPoints;
+                                        }
+                                        Action::DrawPolygon => {
+                                            renderer
+                                                .storage_buffer_object
+                                                .points
+                                                .push(Vec2::new(self.position.x, self.position.y));
+                                            renderer.storage_buffer_object.length += 1;
+                                            renderer.storage_buffer_object_changed = true;
+                                        }
+                                        _ => {}
+                                    },
+                                    State::EditPoints => match self.grabbed_point_idx {
+                                        Some(_) => self.grabbed_point_idx = None,
+                                        None => {
+                                            self.grabbed_point_idx = renderer
+                                                .storage_buffer_object
+                                                .points
+                                                .iter()
+                                                .enumerate()
+                                                .filter_map(|(idx, point)| {
+                                                    let dx = (point.x - self.position.x).abs();
+                                                    let dy = (point.y - self.position.y).abs();
+                                                    if dx < gui.point_grab_tolerance && dy < gui.point_grab_tolerance {
+                                                        Some((idx, dx + dy))
+                                                    } else {
+                                                        None
+                                                    }
+                                                })
+                                                .min_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
+                                                .map(|(idx, _)| idx);
+                                        }
+                                    },
+                                }
+                                // renderer.window.request_redraw();
                             }
-                            // renderer.window.request_redraw();
+                            ElementState::Released => {
+                                if gui.action == Action::Erase {
+                                    self.state = State::Init;
+                                }
+                            }
                         }
                     }
                     MouseButton::Right => match state {
@@ -307,7 +314,9 @@ impl ApplicationHandler for App {
                     | Action::DrawEllipse
                     | Action::CutRectangle => match self.state {
                         State::AddPoints | State::EditPoints => {
-                            renderer.draw();
+                            if !gui.preview {
+                                renderer.draw();
+                            }
                             renderer.copy_texture(CopyDirection::FrontToBack);
                             renderer.storage_buffer_object.points.clear();
                             renderer.storage_buffer_object.length = 0;
@@ -320,7 +329,9 @@ impl ApplicationHandler for App {
                     Action::DrawPolygon => match self.state {
                         State::AddPoints => self.state = State::EditPoints,
                         State::EditPoints => {
-                            renderer.draw();
+                            if !gui.preview {
+                                renderer.draw();
+                            }
                             renderer.copy_texture(CopyDirection::FrontToBack);
                             renderer.storage_buffer_object.points.clear();
                             renderer.storage_buffer_object.length = 0;
